@@ -1,6 +1,7 @@
 package main
 
 import (
+	"jwtservertask/handler"
 	"jwtservertask/initializers"
 
 	"github.com/gin-gonic/gin"
@@ -12,12 +13,9 @@ func init() {
 }
 
 func main() {
-	router := gin.Default()
+	r := gin.Default()
 
-	router.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
-	router.Run()
+	r.POST("/signup", handler.SignUp)
+
+	r.Run()
 }
