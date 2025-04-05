@@ -7,12 +7,12 @@ import (
 	"gorm.io/gorm"
 )
 
-var DB *gorm.DB // ← глобальная переменная
+var DB *gorm.DB
 
-func ConnectToDb() *gorm.DB {
+func ConnectToDb() {
 	var err error
 	dsn := "host=localhost user=postgres password=pas123 dbname=jwt_test port=5432 sslmode=disable"
-	DB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
 		panic("Failed to connect to db ")
@@ -20,5 +20,4 @@ func ConnectToDb() *gorm.DB {
 
 	DB.AutoMigrate(&models.User{})
 
-	return DB
 }
