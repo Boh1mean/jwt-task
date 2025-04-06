@@ -16,6 +16,7 @@ func main() {
 	r := gin.Default()
 
 	r.POST("/signup", handler.SignUp)
+	r.POST("/login", handler.Login)
 
 	r.Run()
 }

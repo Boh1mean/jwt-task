@@ -1,13 +1,13 @@
 package handler
 
 import (
-	"jwtservertask/initializers"
-	"jwtservertask/models"
+	"jwtservertask/service"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 )
+
+var AuthService = service.AuthService{}
 
 type signupReq struct {
 	Email    string `json:"email"`
@@ -24,26 +24,29 @@ func SignUp(c *gin.Context) {
 		return
 	}
 
-	//Hash password
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), 10)
-
+	err := AuthService.SignUp(req.Email, req.Password)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Failed to hash password",
-		})
-	}
-
-	// Create User
-	user := models.User{Email: req.Email, Password: string(hash)}
-	result := initializers.DB.Create(&user)
-
-	if result.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Failed to create user",
-		})
-
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	c.JSON(http.StatusOK, gin.H{"message": "User created successfully"})
+}
+
+func Login(c *gin.Context) {
+	var req signupReq
+	if c.Bind(&req) != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to read body",
+		})
+		return
+	}
+
+	token, err := AuthService.Login(req.Email, req.Password)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": token})
 }
