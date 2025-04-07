@@ -17,6 +17,7 @@ func main() {
 
 	r.POST("/signup", handler.SignUp)
 	r.POST("/login", handler.Login)
+	// r.GET("/validate", handler.ValidateTokenHandler)
 
 	r.Run()
 }
