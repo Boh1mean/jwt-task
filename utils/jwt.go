@@ -15,6 +15,13 @@ type SignedDetails struct {
 	jwt.RegisteredClaims
 }
 
+type RefreshSignedDetails struct {
+	UserID    uint   `json:"user_id"`
+	Email     string `json:"email"`
+	TokenType string `json:"refresh"`
+	jwt.RegisteredClaims
+}
+
 func GenerateToken(userID uint, userEmail string) (string, error) {
 
 	claims := &SignedDetails{
@@ -67,4 +74,18 @@ func ValidateToken(tokenString string) (*SignedDetails, error) {
 
 	fmt.Printf("[OK]: Token is valid. Claims: %+v\n", claims)
 	return claims, nil
+}
+
+func GenerateRefreshToken(claims *RefreshSignedDetails, secretKey string) (string, error) {
+
+	claims.TokenType = "refresh"
+	claims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(24 * time.Hour))
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	refreshToken, err := token.SignedString([]byte(secretKey))
+	if err != nil {
+		return "", fmt.Errorf("failed to sign refresh token: %w", err)
+	}
+
+	return refreshToken, nil
 }
