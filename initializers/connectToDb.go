@@ -19,5 +19,6 @@ func ConnectToDb() {
 	}
 
 	DB.AutoMigrate(&models.User{})
+	DB.AutoMigrate(&models.RefreshToken{})
 
 }

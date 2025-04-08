@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -18,7 +19,7 @@ type SignedDetails struct {
 type RefreshSignedDetails struct {
 	UserID    uint   `json:"user_id"`
 	Email     string `json:"email"`
-	TokenType string `json:"refresh"`
+	TokenType string `json:"token_type"`
 	jwt.RegisteredClaims
 }
 
@@ -41,6 +42,27 @@ func GenerateToken(userID uint, userEmail string) (string, error) {
 
 	fmt.Println("[OK]: Generated token:", tokenString)
 	return tokenString, nil
+}
+
+func GenerateRefreshToken(userID uint, userEmail string) (string, error) {
+
+	claims := RefreshSignedDetails{
+		UserID:    userID,
+		Email:     userEmail,
+		TokenType: "refresh",
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	refreshToken, err := token.SignedString([]byte(secretKey))
+	if err != nil {
+		return "", fmt.Errorf("failed to sign refresh token: %w", err)
+	}
+
+	return refreshToken, nil
 }
 
 func ValidateToken(tokenString string) (*SignedDetails, error) {
@@ -76,16 +98,36 @@ func ValidateToken(tokenString string) (*SignedDetails, error) {
 	return claims, nil
 }
 
-func GenerateRefreshToken(claims *RefreshSignedDetails, secretKey string) (string, error) {
+func ValidateRefreshToken(refreshToken string) (*RefreshSignedDetails, error) {
+	fmt.Println("[INFO]: Validating refresh token:", refreshToken)
 
-	claims.TokenType = "refresh"
-	claims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(24 * time.Hour))
+	token, err := jwt.ParseWithClaims(refreshToken, &SignedDetails{}, func(token *jwt.Token) (interface{}, error) {
+		_, ok := token.Method.(*jwt.SigningMethodHMAC)
+		if !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(secretKey), nil
+	})
+}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	refreshToken, err := token.SignedString([]byte(secretKey))
-	if err != nil {
-		return "", fmt.Errorf("failed to sign refresh token: %w", err)
-	}
+func SetAccessAndRefreshTokenCookies(c *gin.Context, tokenString, refreshToken string) {
+	c.SetCookie(
+		"access_token",
+		tokenString,
+		int(3600),
+		"/",
+		"localhost",
+		false,
+		true,
+	)
 
-	return refreshToken, nil
+	c.SetCookie(
+		"refresh_token",
+		refreshToken,
+		int(time.Hour.Seconds()*24*7),
+		"/",
+		"localhost",
+		false,
+		true,
+	)
 }

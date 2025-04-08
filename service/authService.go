@@ -28,23 +28,28 @@ func (s *AuthService) SignUp(email, password string) error {
 	return nil
 }
 
-func (s *AuthService) Login(email, password string) (string, error) {
+func (s *AuthService) Login(request models.User) (tokenString string, refreshToken string, err error) {
 	var user models.User
-	result := initializers.DB.First(&user, "email = ?", email)
+	result := initializers.DB.First(&user, "email = ?", request.Email)
 
 	if result.Error != nil || user.ID == 0 {
-		return "", errors.New("invalid email or password")
+		return "", "", errors.New("invalid email or password")
 	}
 
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password))
 	if err != nil {
-		return "", errors.New("invalid email or password")
+		return "", "", errors.New("invalid email or password")
 	}
 
-	token, err := utils.GenerateToken(user.ID, user.Email)
+	accessToken, err := utils.GenerateToken(user.ID, user.Email)
 	if err != nil {
-		return "", errors.New("token not create")
+		return "", "", errors.New("token not create")
 	}
 
-	return token, nil
+	refreshToken, err = utils.GenerateRefreshToken(user.ID, user.Email)
+	if err != nil {
+		return "", "", errors.New("failed to generate refresh token")
+	}
+
+	return accessToken, refreshToken, nil
 }
