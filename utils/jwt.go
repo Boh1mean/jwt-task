@@ -2,13 +2,12 @@ package utils
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var secretKey = []byte(os.Getenv("SECRET"))
+var secretKey = "a-string-secret-at-least-256-bits-long" // строка, не []byte
 
 type SignedDetails struct {
 	UserID uint   `json:"user_id"`
@@ -18,7 +17,7 @@ type SignedDetails struct {
 
 func GenerateToken(userID uint, userEmail string) (string, error) {
 
-	claims := SignedDetails{
+	claims := &SignedDetails{
 		UserID: userID,
 		Email:  userEmail,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -33,30 +32,39 @@ func GenerateToken(userID uint, userEmail string) (string, error) {
 		return "", fmt.Errorf("[FAIL]: could not sign token: %w", err)
 	}
 
+	fmt.Println("[OK]: Generated token:", tokenString)
 	return tokenString, nil
 }
 
-// func ValidateToken(tokenString string) (models.User, error) {
-// 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-// 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
-// 		if !ok {
-// 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-// 		}
+func ValidateToken(tokenString string) (*SignedDetails, error) {
+	fmt.Println("[INFO]: Validating token:", tokenString)
 
-// 		return []byte(secretKey), nil
-// 	})
+	token, err := jwt.ParseWithClaims(tokenString, &SignedDetails{}, func(token *jwt.Token) (interface{}, error) {
+		_, ok := token.Method.(*jwt.SigningMethodHMAC)
+		if !ok {
+			fmt.Println("[ERROR]: Unexpected signing method:", token.Header["alg"])
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(secretKey), nil
+	})
 
-// 	// user := models.User{}
-// 	// if err != nil {
-// 	// 	return user, err
-// 	// }
+	if err != nil {
+		fmt.Println("[ERROR]: Token parse error:", err)
+		return nil, fmt.Errorf("validate: %w", err)
+	}
 
-// 	// payload, ok := token.Claims.(jwt.MapClaims)
-// 	// if ok && token.Valid {
-// 	// 	user.Email = payload["userID"].(string)
+	claims, ok := token.Claims.(*SignedDetails)
+	if !ok {
+		fmt.Println("[ERROR]: Claims could not be cast")
+		return nil, fmt.Errorf("invalid token claims")
+	}
 
-// 	// 	return user, nil
-// 	// }
+	if !token.Valid {
+		fmt.Println("[ERROR]: Token is not valid")
+		fmt.Printf("[DEBUG]: Token expires at: %v, now: %v\n", claims.ExpiresAt.Time, time.Now())
+		return nil, fmt.Errorf("invalid token")
+	}
 
-// 	// return user, errors.New("invalid token")
-// }
+	fmt.Printf("[OK]: Token is valid. Claims: %+v\n", claims)
+	return claims, nil
+}
