@@ -13,7 +13,7 @@ func Welcome(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Welcome " + email.(string),
+	c.HTML(http.StatusOK, "welcome.html", gin.H{
+		"Email": email,
 	})
 }

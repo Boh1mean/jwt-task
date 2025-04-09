@@ -11,19 +11,21 @@ import (
 
 func Authentication() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		clientToken := ctx.Request.Header.Get("Authorization")
-		if clientToken == "" {
-			ctx.AbortWithStatus(http.StatusUnauthorized)
-			return
+		clientToken := ctx.GetHeader("Authorization")
+
+		if clientToken != "" && strings.HasPrefix(clientToken, "Bearer ") {
+			clientToken = strings.TrimPrefix(clientToken, "Bearer ")
+		} else {
+			// Если нет — пробуем из cookie
+			var err error
+			clientToken, err = ctx.Cookie("access_token")
+			if err != nil || clientToken == "" {
+				ctx.AbortWithStatus(http.StatusUnauthorized)
+				return
+			}
 		}
 
-		tokenString := strings.Replace(clientToken, "Bearer ", "", 1)
-		if tokenString == "" {
-			ctx.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
-
-		claims, err := utils.ValidateToken(tokenString)
+		claims, err := utils.ValidateToken(clientToken)
 		if err != nil {
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			ctx.Abort()
