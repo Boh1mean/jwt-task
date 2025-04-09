@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -101,7 +100,7 @@ func ValidateToken(tokenString string) (*SignedDetails, error) {
 func ValidateRefreshToken(refreshToken string) (*RefreshSignedDetails, error) {
 	fmt.Println("[INFO]: Validating refresh token:", refreshToken)
 
-	token, err := jwt.ParseWithClaims(refreshToken, &SignedDetails{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(refreshToken, &RefreshSignedDetails{}, func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -124,26 +123,4 @@ func ValidateRefreshToken(refreshToken string) (*RefreshSignedDetails, error) {
 	}
 
 	return claims, nil
-}
-
-func SetAccessAndRefreshTokenCookies(c *gin.Context, tokenString, refreshToken string) {
-	c.SetCookie(
-		"access_token",
-		tokenString,
-		int(3600),
-		"/",
-		"localhost",
-		false,
-		true,
-	)
-
-	c.SetCookie(
-		"refresh_token",
-		refreshToken,
-		int(time.Hour.Seconds()*24*7),
-		"/",
-		"localhost",
-		false,
-		true,
-	)
 }

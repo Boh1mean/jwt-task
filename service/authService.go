@@ -5,6 +5,7 @@ import (
 	"jwtservertask/initializers"
 	"jwtservertask/models"
 	"jwtservertask/utils"
+	"log"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -72,12 +73,17 @@ func (s *AuthService) Login(email, password string) (tokenString string, refresh
 func (s *AuthService) Refresh(refreshToken string) (string, string, error) {
 	claims, err := utils.ValidateRefreshToken(refreshToken)
 	if err != nil {
+		log.Println("Invalid JWT refresh token:", err)
 		return "", "", errors.New("invalid refresh token")
 	}
 
 	storedToken, err := s.tokenService.FindByToken(refreshToken)
 	if err != nil || storedToken == nil || storedToken.ExpiresAt.Before(time.Now()) {
+		log.Println("Refresh token not found in DB:", err)
 		return "", "", errors.New("refresh token expired or not found")
+	}
+	if storedToken.ExpiresAt.Before(time.Now()) {
+		log.Println("Refresh token expired:", storedToken.ExpiresAt)
 	}
 
 	accessToken, err := utils.GenerateToken(claims.UserID, claims.Email)
