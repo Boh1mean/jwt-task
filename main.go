@@ -3,21 +3,25 @@ package main
 import (
 	"jwtservertask/handler"
 	"jwtservertask/initializers"
+	"jwtservertask/service"
 
 	"github.com/gin-gonic/gin"
 )
 
-func init() {
+func main() {
 	initializers.LoadEnvVariables()
 	initializers.ConnectToDb()
-}
 
-func main() {
+	tokenService := service.NewTokenService(initializers.DB)
+	authService := service.NewAuthService(tokenService)
+	authHandler := handler.NewAuthHandler(authService)
+
 	r := gin.Default()
 
-	r.POST("/signup", handler.SignUp)
-	r.POST("/login", handler.Login)
+	r.POST("/signup", authHandler.SignUp)
+	r.POST("/login", authHandler.Login)
 	r.GET("/validate", handler.ValidateTokenHandler)
+	r.GET("/refresh", authHandler.RefreshTokenHandler)
 
 	r.Run()
 }

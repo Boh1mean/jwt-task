@@ -5,11 +5,20 @@ import (
 	"jwtservertask/initializers"
 	"jwtservertask/models"
 	"jwtservertask/utils"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
-type AuthService struct{}
+type AuthService struct {
+	tokenService *TokenService
+}
+
+func NewAuthService(tokenService *TokenService) *AuthService {
+	return &AuthService{
+		tokenService: tokenService,
+	}
+}
 
 func (s *AuthService) SignUp(email, password string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 10)
@@ -28,15 +37,15 @@ func (s *AuthService) SignUp(email, password string) error {
 	return nil
 }
 
-func (s *AuthService) Login(request models.User) (tokenString string, refreshToken string, err error) {
+func (s *AuthService) Login(email, password string) (tokenString string, refreshToken string, err error) {
 	var user models.User
-	result := initializers.DB.First(&user, "email = ?", request.Email)
+	result := initializers.DB.First(&user, "email = ?", email)
 
 	if result.Error != nil || user.ID == 0 {
 		return "", "", errors.New("invalid email or password")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
 		return "", "", errors.New("invalid email or password")
 	}
@@ -51,5 +60,41 @@ func (s *AuthService) Login(request models.User) (tokenString string, refreshTok
 		return "", "", errors.New("failed to generate refresh token")
 	}
 
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	err = s.tokenService.SaveRefreshToken(refreshToken, user.ID, expiresAt)
+	if err != nil {
+		return "", "", errors.New("failed to save refresh token ")
+	}
+
 	return accessToken, refreshToken, nil
+}
+
+func (s *AuthService) Refresh(refreshToken string) (string, string, error) {
+	claims, err := utils.ValidateRefreshToken(refreshToken)
+	if err != nil {
+		return "", "", errors.New("invalid refresh token")
+	}
+
+	storedToken, err := s.tokenService.FindByToken(refreshToken)
+	if err != nil || storedToken == nil || storedToken.ExpiresAt.Before(time.Now()) {
+		return "", "", errors.New("refresh token expired or not found")
+	}
+
+	accessToken, err := utils.GenerateToken(claims.UserID, claims.Email)
+	if err != nil {
+		return "", "", errors.New("failed to generate access token")
+	}
+
+	newRefreshToken, err := utils.GenerateRefreshToken(claims.UserID, claims.Email)
+	if err != nil {
+		return "", "", errors.New("failed to generate refresh token")
+	}
+
+	expiresAt := time.Now().Add(7 * 24 * time.Hour) // 7 дней
+	err = s.tokenService.SaveRefreshToken(newRefreshToken, claims.UserID, expiresAt)
+	if err != nil {
+		return "", "", errors.New("failed to save refresh token")
+	}
+
+	return accessToken, newRefreshToken, nil
 }

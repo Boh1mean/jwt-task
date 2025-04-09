@@ -108,6 +108,22 @@ func ValidateRefreshToken(refreshToken string) (*RefreshSignedDetails, error) {
 		}
 		return []byte(secretKey), nil
 	})
+
+	if err != nil {
+		fmt.Println("[ERROR]: Refresh token parse error:", err)
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(*RefreshSignedDetails)
+	if !ok || !token.Valid {
+		return nil, fmt.Errorf("invalid token claims")
+	}
+
+	if claims.TokenType != "refresh" {
+		return nil, fmt.Errorf("invalid token type")
+	}
+
+	return claims, nil
 }
 
 func SetAccessAndRefreshTokenCookies(c *gin.Context, tokenString, refreshToken string) {
