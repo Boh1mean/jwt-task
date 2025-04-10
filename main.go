@@ -20,6 +20,7 @@ func main() {
 	authService := service.NewAuthService(tokenService)
 	//authHandler := handler.NewAuthHandler(authService)
 	loginFormHandler := handler.NewLoginFormHandler(authService)
+	SignUpFormHandler := handler.NewSignUpFormHandler(authService)
 
 	r := gin.Default()
 
@@ -29,7 +30,13 @@ func main() {
 	// r.GET("/validate", handler.ValidateTokenHandler)
 	// r.GET("/refresh", authHandler.RefreshTokenHandler)
 
+	r.Static("/static", "./static")
 	r.LoadHTMLGlob("templates/*")
+
+	r.GET("/signup", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "signup.html", nil)
+	})
+	r.POST("/signup", SignUpFormHandler.SignUp)
 
 	r.GET("/login", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "login.html", nil)
@@ -39,6 +46,12 @@ func main() {
 	r.GET("/homepage", middleware.Authentication(), func(c *gin.Context) {
 		c.HTML(http.StatusOK, "homepage.html", nil)
 	})
+
+	protected := r.Group("/user")
+	protected.Use(middleware.Authentication())
+	{
+		protected.GET("/homepage", handler.Welcome)
+	}
 
 	r.Run()
 }

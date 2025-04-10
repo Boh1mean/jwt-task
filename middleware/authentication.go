@@ -16,7 +16,6 @@ func Authentication() gin.HandlerFunc {
 		if clientToken != "" && strings.HasPrefix(clientToken, "Bearer ") {
 			clientToken = strings.TrimPrefix(clientToken, "Bearer ")
 		} else {
-			// Если нет — пробуем из cookie
 			var err error
 			clientToken, err = ctx.Cookie("access_token")
 			if err != nil || clientToken == "" {
