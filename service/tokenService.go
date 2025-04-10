@@ -18,7 +18,7 @@ func NewTokenService(db *gorm.DB) *TokenService {
 	return &TokenService{db: db}
 }
 
-func hashToken(token string) string {
+func HashToken(token string) string {
 	hash := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(hash[:])
 }
@@ -27,7 +27,7 @@ func (s *TokenService) SaveRefreshToken(token string, userID uint, expiresAt tim
 	if s.db == nil {
 		log.Println("Error: DB connection is nil")
 	}
-	hashed := hashToken(token)
+	hashed := HashToken(token)
 	refresh := &models.RefreshToken{
 		UserID:    userID,
 		TokenHash: hashed,
@@ -42,7 +42,7 @@ func (s *TokenService) SaveRefreshToken(token string, userID uint, expiresAt tim
 }
 
 func (s *TokenService) FindByToken(token string) (*models.RefreshToken, error) {
-	hashedToken := hashToken(token)
+	hashedToken := HashToken(token)
 	var refreshToken models.RefreshToken
 	result := s.db.Where("token_hash = ?", hashedToken).First(&refreshToken)
 	if result.Error != nil {
@@ -53,7 +53,7 @@ func (s *TokenService) FindByToken(token string) (*models.RefreshToken, error) {
 }
 
 func (s *TokenService) ValidateRefreshToken(token string) (*models.RefreshToken, error) {
-	hashed := hashToken(token)
+	hashed := HashToken(token)
 	var refresh models.RefreshToken
 	err := s.db.Where("token_hash = ?", hashed).First(&refresh).Error
 	if err != nil {

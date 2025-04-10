@@ -4,6 +4,7 @@ import (
 	"jwtservertask/handler"
 	"jwtservertask/initializers"
 	"jwtservertask/middleware"
+	"jwtservertask/repository"
 	"jwtservertask/service"
 	"net/http"
 
@@ -17,17 +18,20 @@ func init() {
 
 func main() {
 	tokenService := service.NewTokenService(initializers.DB)
-	authService := service.NewAuthService(tokenService)
-	//authHandler := handler.NewAuthHandler(authService)
+	tokenRepo := repository.NewPostgresTokenRepository()
+	authService := service.NewAuthService(tokenService, tokenRepo)
+
+	// AuthHandler := handler.NewAuthHandler(authService)
 	loginFormHandler := handler.NewLoginFormHandler(authService)
 	SignUpFormHandler := handler.NewSignUpFormHandler(authService)
+	LogoutFormHandler := handler.NewLogoutFormHandler(authService)
 
 	r := gin.Default()
 
 	// r.POST("/signup", authHandler.SignUp)
 	// r.POST("/login", authHandler.Login)
 	// r.GET("/login", authHandler.Login)
-	// r.GET("/validate", handler.ValidateTokenHandler)
+	r.GET("/validate", handler.ValidateTokenHandler)
 	// r.GET("/refresh", authHandler.RefreshTokenHandler)
 
 	r.Static("/static", "./static")
@@ -43,15 +47,18 @@ func main() {
 	})
 	r.POST("/login", loginFormHandler.Login)
 
-	r.GET("/homepage", middleware.Authentication(), func(c *gin.Context) {
-		c.HTML(http.StatusOK, "homepage.html", nil)
+	r.POST("/logout", LogoutFormHandler.Logout)
+
+	r.GET("/user/homepage", middleware.Authentication(), func(c *gin.Context) {
+		email, _ := c.Get("email")
+		c.HTML(http.StatusOK, "homepage.html", gin.H{"Email": email})
 	})
 
-	protected := r.Group("/user")
-	protected.Use(middleware.Authentication())
-	{
-		protected.GET("/homepage", handler.Welcome)
-	}
+	// protected := r.Group("/user")
+	// protected.Use(middleware.Authentication())
+	// {
+	// 	protected.GET("/homepage", handler.Welcome)
+	// }
 
 	r.Run()
 }
