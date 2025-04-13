@@ -7,6 +7,10 @@ import (
 
 type PostgresTokenRepository struct{}
 
+func NewPostgresTokenRepository() TokenRepository {
+	return &PostgresTokenRepository{}
+}
+
 func (r *PostgresTokenRepository) Save(token *models.RefreshToken) error {
 	return initializers.DB.Create(token).Error
 }
@@ -18,7 +22,7 @@ func (r *PostgresTokenRepository) FindByHash(hash string) (*models.RefreshToken,
 }
 
 func (r *PostgresTokenRepository) DeleteByHash(hash string) error {
-	return initializers.DB.Where("token_hash = ?", hash).Delete(models.RefreshToken{}).Error
+	return initializers.DB.Where("token_hash = ?", hash).Delete(&models.RefreshToken{}).Error
 }
 
 func (r *PostgresTokenRepository) DeleteAllByUser(userID uint) error {

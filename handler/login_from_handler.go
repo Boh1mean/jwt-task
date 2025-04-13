@@ -17,7 +17,6 @@ func NewLoginFormHandler(authService *service.AuthService) *LoginFormHandler {
 }
 
 func (h *LoginFormHandler) Login(c *gin.Context) {
-	// Получаем данные из формы
 	email := c.PostForm("email")
 	password := c.PostForm("password")
 
@@ -30,17 +29,14 @@ func (h *LoginFormHandler) Login(c *gin.Context) {
 
 	accessToken, refreshToken, err := h.authService.Login(email, password)
 	if err != nil {
-		// Если ошибка, показываем страницу с ошибкой
 		c.HTML(http.StatusBadRequest, "login.html", gin.H{
 			"error": err.Error(),
 		})
 		return
 	}
 
-	// Устанавливаем cookies для авторизации
 	c.SetCookie("access_token", accessToken, 3600, "/", "", false, true)
 	c.SetCookie("refresh_token", refreshToken, 3600*24*7, "/", "", false, true)
 
-	// Редирект на домашнюю страницу после успешного логина
-	c.Redirect(http.StatusFound, "/homepage")
+	c.Redirect(http.StatusFound, "/user/homepage")
 }

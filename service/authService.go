@@ -4,6 +4,7 @@ import (
 	"errors"
 	"jwtservertask/initializers"
 	"jwtservertask/models"
+	"jwtservertask/repository"
 	"jwtservertask/utils"
 	"log"
 	"time"
@@ -12,12 +13,14 @@ import (
 )
 
 type AuthService struct {
-	tokenService *TokenService
+	tokenService    *TokenService
+	tokenRepository repository.TokenRepository
 }
 
-func NewAuthService(tokenService *TokenService) *AuthService {
+func NewAuthService(tokenService *TokenService, tokenRepository repository.TokenRepository) *AuthService {
 	return &AuthService{
-		tokenService: tokenService,
+		tokenService:    tokenService,
+		tokenRepository: tokenRepository,
 	}
 }
 
@@ -68,6 +71,15 @@ func (s *AuthService) Login(email, password string) (tokenString string, refresh
 	}
 
 	return accessToken, refreshToken, nil
+}
+
+func (s *AuthService) Logout(tokenHash string) error {
+
+	err := s.tokenRepository.DeleteByHash(tokenHash)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *AuthService) Refresh(refreshToken string) (string, string, error) {
