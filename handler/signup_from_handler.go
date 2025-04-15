@@ -31,8 +31,8 @@ func (h *SignUpFormHandler) SignUp(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("access_token", accessToken, 3600, "/", "", false, true)
-	c.SetCookie("refresh_token", refreshToken, 3600*24*7, "/", "", false, true)
+	c.SetCookie("access_token", accessToken, 3600, "/", "localhost", false, true)
+	c.SetCookie("refresh_token", refreshToken, 3600*24*7, "/", "localhost", false, true)
 
 	c.Redirect(http.StatusFound, "/user/homepage")
 }
