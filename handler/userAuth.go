@@ -60,24 +60,24 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	})
 }
 
-func (h *AuthHandler) Logout(c *gin.Context) {
-	refreshToken, err := c.Cookie("refresh_token")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get refresh token"})
-		return
-	}
+// func (h *AuthHandler) Logout(c *gin.Context) {
+// 	refreshToken, err := c.Cookie("refresh_token")
+// 	if err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get refresh token"})
+// 		return
+// 	}
 
-	err = h.authService.Logout(refreshToken)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+// 	err = h.authService.Logout(refreshToken)
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
 
-	c.SetCookie("access_token", "", -1, "/", "localhost", false, true)
-	c.SetCookie("refresh_token", "", -1, "/", "localhost", false, true)
+// 	c.SetCookie("access_token", "", -1, "/", "localhost", false, true)
+// 	c.SetCookie("refresh_token", "", -1, "/", "localhost", false, true)
 
-	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
-}
+// 	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
+// }
 
 // GET /refresh
 func (h *AuthHandler) RefreshTokenHandler(c *gin.Context) {

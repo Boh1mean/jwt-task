@@ -7,7 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// LoginFormHandler обработка логина через HTML форму
 type LoginFormHandler struct {
 	authService *service.AuthService
 }
